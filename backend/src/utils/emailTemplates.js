@@ -301,6 +301,116 @@ function getEventNotificationEmailTemplate(eventTitle, messageBody, recipientNam
   return { subject: `${eventTitle} - Event Update`, html: wrap(`Important update about ${eventTitle} on Startups India.`, 'Event Update', inner), text };
 }
 
+// ── Event ticket / registration confirmation ────────────────────────────────
+// Sent after a successful (free or paid) event registration. Acts as the ticket.
+function getEventTicketEmailTemplate({
+  recipientName,
+  eventTitle,
+  ticketTypeName,
+  ticketCode,
+  amountPaidPaise = 0,
+  dateText = '',
+  timeText = '',
+  venueText = '',
+  modeText = '',
+  meetingLink = '',
+  postRegistrationMessage = '',
+  eventUrl = '',
+}) {
+  const name = esc(recipientName || 'Founder');
+  const paid = amountPaidPaise > 0 ? `\u20B9${(amountPaidPaise / 100).toLocaleString('en-IN')}` : 'Free';
+
+  const detailRow = (label, value) => value ? `
+    <tr>
+      <td style="padding:8px 0;font-family:${F};font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;width:130px;vertical-align:top;">${esc(label)}</td>
+      <td style="padding:8px 0;font-family:${F};font-size:14px;color:#0a0a0a;font-weight:600;">${esc(value)}</td>
+    </tr>` : '';
+
+  const inner = `
+    <tr>
+      <td class="body-pad" style="padding:36px 32px 12px;">
+        ${pill('Registration Confirmed')}
+        <h1 class="hero-heading" style="margin:0 0 8px;font-family:${F};font-size:28px;font-weight:900;color:#0a0a0a;line-height:1.2;letter-spacing:-0.3px;">
+          You're in! 🎉
+        </h1>
+        <p style="margin:0 0 4px;font-family:${F};font-size:15px;color:#333;font-weight:600;">Hi ${name},</p>
+        <p style="margin:0 0 24px;font-family:${F};font-size:15px;color:#555;line-height:1.75;">
+          Your registration for <strong style="color:#0a0a0a;">${esc(eventTitle)}</strong> is confirmed. Here is your ticket - please keep this email for entry.
+        </p>
+      </td>
+    </tr>
+
+    <!-- Ticket card -->
+    <tr>
+      <td style="padding:0 32px 28px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px dashed #cbd5e1;border-radius:12px;background:#fbfcfe;">
+          <tr>
+            <td style="padding:20px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${detailRow('Ticket', ticketTypeName || 'General')}
+                ${ticketCode ? detailRow('Ticket Code', ticketCode) : ''}
+                ${detailRow('Amount', paid)}
+                ${detailRow('Date', dateText)}
+                ${detailRow('Time', timeText)}
+                ${detailRow(modeText === 'Online' ? 'Format' : 'Venue', modeText === 'Online' ? 'Online Event' : venueText)}
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    ${meetingLink ? `
+    <tr>
+      <td style="padding:0 32px 20px;">
+        <p style="margin:0 0 6px;font-family:${F};font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Join Link</p>
+        <a href="${esc(meetingLink)}" style="font-family:${F};font-size:14px;color:${BRAND_RED};text-decoration:none;word-break:break-all;">${esc(meetingLink)}</a>
+      </td>
+    </tr>` : ''}
+
+    ${postRegistrationMessage ? `
+    <tr>
+      <td style="padding:0 32px 24px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="padding:16px 18px;background:rgba(230,57,70,0.05);border-left:3px solid ${BRAND_RED};border-radius:6px;">
+              <div style="font-family:${F};font-size:14px;color:#444;line-height:1.7;white-space:pre-wrap;">${esc(postRegistrationMessage)}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>` : ''}
+
+    ${eventUrl ? ctaBtn(eventUrl, 'View Event Details') : ''}
+    ${hr()}`;
+
+  const textLines = [
+    `Hi ${recipientName || 'Founder'},`,
+    ``,
+    `Your registration for "${eventTitle}" is confirmed. Keep this email as your ticket.`,
+    ``,
+    `Ticket: ${ticketTypeName || 'General'}`,
+    ticketCode ? `Ticket Code: ${ticketCode}` : '',
+    `Amount: ${paid}`,
+    dateText ? `Date: ${dateText}` : '',
+    timeText ? `Time: ${timeText}` : '',
+    modeText === 'Online' ? 'Format: Online Event' : (venueText ? `Venue: ${venueText}` : ''),
+    meetingLink ? `Join Link: ${meetingLink}` : '',
+    postRegistrationMessage ? `\n${postRegistrationMessage}` : '',
+    eventUrl ? `\nView event: ${eventUrl}` : '',
+    ``,
+    `Need help? ${SUPPORT}`,
+    ``,
+    `-- Startups India Team`,
+  ].filter(l => l !== '');
+
+  return {
+    subject: `🎟 Your ticket for ${eventTitle}`,
+    html: wrap(`Your registration for ${eventTitle} is confirmed.`, 'Registration Confirmed', inner),
+    text: textLines.join('\n'),
+  };
+}
+
 function getBroadcastEmailTemplate({ subject, body, ctaUrl, ctaText }) {
   const inner = `
     <tr>
@@ -428,6 +538,7 @@ module.exports = {
   getConfirmationEmailTemplate,
   getWelcomeEmailTemplate,
   getEventNotificationEmailTemplate,
+  getEventTicketEmailTemplate,
   getBroadcastEmailTemplate,
   getPasswordResetTemplate,
   getOAuthOnlyResetTemplate,

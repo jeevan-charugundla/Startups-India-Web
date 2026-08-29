@@ -38,7 +38,7 @@ const SITE_ROUTES = [
 ];
 
 /**
- * Build the final destination URL with UTM params — this is what gets
+ * Build the final destination URL with UTM params - this is what gets
  * encoded directly into the QR so scanners (Google Lens etc.) show the
  * clean site URL, not the API backend.
  */
@@ -198,7 +198,7 @@ export default function CampaignsPage() {
               {campaigns.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
-                    No campaigns yet — click "+ New Campaign" to create one.
+                    No campaigns yet - click "+ New Campaign" to create one.
                   </td>
                 </tr>
               )}
@@ -230,7 +230,7 @@ export default function CampaignsPage() {
                 <label>Redirect To (Page) *</label>
                 <select value={form.route} onChange={e => setForm({ ...form, route: e.target.value })}>
                   {SITE_ROUTES.map(r => (
-                    <option key={r.path} value={r.path}>{r.label} — {r.path}</option>
+                    <option key={r.path} value={r.path}>{r.label} - {r.path}</option>
                   ))}
                 </select>
                 <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
@@ -297,7 +297,7 @@ export default function CampaignsPage() {
                     />
                   </div>
 
-                  {/* Final URL — what the QR encodes */}
+                  {/* Final URL - what the QR encodes */}
                   <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#4f46e5', wordBreak: 'break-all' }}>
                       {qrCampaign.finalUrl}

@@ -31,8 +31,18 @@ async function createRazorpayOrder(req, res) {
   res.status(201).json({ success: true, data: result });
 }
 
+async function createGuestRazorpayOrder(req, res) {
+  const result = await paymentsService.createGuestRazorpayOrder(req.body);
+  res.status(201).json({ success: true, data: result });
+}
+
 async function verifyRazorpayPayment(req, res) {
   const payment = await paymentsService.verifyRazorpayPayment(req.user.userId, req.body);
+  res.json({ success: true, data: payment });
+}
+
+async function verifyGuestRazorpayPayment(req, res) {
+  const payment = await paymentsService.verifyGuestRazorpayPayment(req.body);
   res.json({ success: true, data: payment });
 }
 
@@ -68,7 +78,9 @@ module.exports = {
   verifyIntent,
   handleWebhook,
   createRazorpayOrder,
+  createGuestRazorpayOrder,
   verifyRazorpayPayment,
+  verifyGuestRazorpayPayment,
   handleRazorpayWebhook,
   getPurchases,
   getBillingHistory,

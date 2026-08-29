@@ -6,7 +6,7 @@ const { Payment } = require('../payments/payment.model');
 const { Certificate } = require('../certificates/certificate.model');
 const { Article } = require('../../models/Article');
 const { ArticleView, ArticleLike, ArticleBookmark } = require('../../models/ArticleAnalytics');
-const { Event } = require('../../models/Event');
+const { Event, generateSlug } = require('../../models/Event');
 const { EventRegistration } = require('../../models/EventRegistration');
 const { Lead } = require('../../models/Lead');
 const { Testimonial } = require('../../models/Testimonial');
@@ -18,7 +18,10 @@ const { ApiError } = require('../../utils/apiError');
 const mediaService = require('../media/media.service');
 const { Media } = require('../media/media.model');
 const { cacheDel, cacheFlushPattern } = require('../../infrastructure/cache/redis');
+const { invalidateEventCache } = require('../events/events.service');
 const { extractS3Key } = require('../../utils/s3');
+const { EvaluationPayment, GrantApplication } = require('../grants/grant.models');
+const { EventPartner } = require('../../models/EventPartner');
 const { escapeRegex, sanitizeSort } = require('../../utils/sanitizer');
 const { sendEmail } = require('../../utils/emailService');
 const { logger } = require('../../infrastructure/observability/logger');
@@ -381,18 +384,66 @@ async function deleteCourse(id) {
 
 // ─── PAYMENTS ───────────────────────────────────────────────────
 async function listPayments({ page = 1, limit = 20, status, sort = '-createdAt' }) {
-  const query = {};
-  if (status) query.status = status;
+  // ── Map the UI status filter to each collection's vocabulary ─────────
+  // EvaluationPayment uses 'paid' where Payment uses 'succeeded'.
+  const paymentStatusFilter = status ? { status } : {};
+  const grantStatusFilter = status
+    ? { status: status === 'succeeded' ? 'paid' : status }
+    : { status: { $in: ['created', 'paid', 'failed', 'expired'] } };
 
-  const total = await Payment.countDocuments(query);
-  const payments = await Payment.find(query)
-    .populate('userId', 'fullName email')
-    .populate('courseId', 'title')
-    .sort(sort)
-    .skip((page - 1) * limit)
-    .limit(limit);
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
 
-  return { payments, total, page, pages: Math.ceil(total / limit) };
+  // ── Query both collections in parallel ───────────────────────────────
+  const [regularPayments, evalPayments] = await Promise.all([
+    Payment.find(paymentStatusFilter)
+      .populate('userId', 'fullName email')
+      .populate('courseId', 'title')
+      .populate('eventId', 'title')
+      .lean(),
+    EvaluationPayment.find(grantStatusFilter)
+      .populate('userId', 'fullName email')
+      .populate('applicationId', 'applicationId startup')
+      .lean(),
+  ]);
+
+  // ── Normalize EvaluationPayment rows to the same shape as Payment ────
+  const normalizedGrant = evalPayments.map(ep => ({
+    _id: ep._id,
+    userId: ep.userId,
+    courseId: null,
+    // Surface the grant application reference so the UI can display it
+    grantApplication: ep.applicationId
+      ? {
+          ref: ep.applicationId.applicationId,
+          startup: ep.applicationId.startup?.name || null,
+        }
+      : null,
+    provider: ep.provider,
+    orderId: ep.orderId,
+    paymentId: ep.paymentId,
+    // Flat amount for display - use totalAmount (already in paise)
+    amount: ep.totalAmount,
+    currency: ep.currency,
+    // Normalise status: 'paid' → 'succeeded' for consistent UI colouring
+    status: ep.status === 'paid' ? 'succeeded' : ep.status,
+    // Keep raw grant status for the badge label
+    grantStatus: ep.status,
+    type: 'grant_evaluation',
+    invoiceNumber: ep.invoiceNumber,
+    paidAt: ep.paidAt,
+    createdAt: ep.createdAt,
+    updatedAt: ep.updatedAt,
+  }));
+
+  // ── Merge, sort by createdAt desc, paginate ───────────────────────────
+  const merged = [...regularPayments.map(p => ({ ...p, type: 'payment' })), ...normalizedGrant]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = merged.length;
+  const paginated = merged.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+
+  return { payments: paginated, total, page: pageNum, pages: Math.ceil(total / limitNum) };
 }
 
 async function refundPayment(id) {
@@ -587,29 +638,72 @@ async function listEvents({ page = 1, limit = 20, status, sort = '-date' }) {
   const events = await Event.find(query)
     .sort(sort)
     .skip((page - 1) * limit)
-    .limit(limit);
+    .limit(limit)
+    .lean();
+
+  // Attach an accurate registration count from the EventRegistration collection
+  // (source of truth for the Regs page), covering both logged-in and guest
+  // registrations. The event.registrations array only holds logged-in users.
+  const eventIds = events.map(e => e._id);
+  if (eventIds.length) {
+    const counts = await EventRegistration.aggregate([
+      { $match: { event: { $in: eventIds }, attendanceStatus: { $ne: 'Cancelled' } } },
+      { $group: { _id: '$event', count: { $sum: 1 } } },
+    ]);
+    const countMap = counts.reduce((acc, c) => {
+      acc[String(c._id)] = c.count;
+      return acc;
+    }, {});
+    events.forEach(e => {
+      e.registrationCount = countMap[String(e._id)] || 0;
+    });
+  }
+
   return { events, total, page, pages: Math.ceil(total / limit) };
 }
 
 async function createEvent(data) {
-  const event = await Event.create(data);
+  // Auto-generate slug from title if none supplied, then ensure uniqueness
+  let slug = data.slug ? data.slug : generateSlug(data.title || '');
+  if (slug) {
+    // Append a short timestamp suffix if the slug already exists
+    const existing = await Event.findOne({ slug }).lean();
+    if (existing) {
+      slug = `${slug}-${Date.now().toString(36)}`;
+    }
+  }
+
+  const event = await Event.create({ ...data, slug: slug || undefined });
   cacheFlushPattern('events:*').catch(() => {});
   return event;
 }
 
 async function updateEvent(id, updates) {
+  // If admin changed the title and hasn't supplied a custom slug,
+  // regenerate the slug from the new title
+  if (updates.title && !updates.slug) {
+    const current = await Event.findById(id).select('slug title').lean();
+    if (current && generateSlug(current.title) === (current.slug || '')) {
+      // Slug was auto-generated - keep it in sync with the new title
+      updates.slug = generateSlug(updates.title);
+    }
+  }
+  // Normalise any manually supplied slug
+  if (updates.slug) {
+    updates.slug = generateSlug(updates.slug);
+  }
+
   const event = await Event.findByIdAndUpdate(id, updates, { new: true });
   if (!event) throw new ApiError(404, 'Event not found');
-  cacheDel(`event:${id}`).catch(() => {});
-  cacheFlushPattern('events:*').catch(() => {});
+  // Flush all cache variants (old slug, new slug, id pointers, lists)
+  await invalidateEventCache(String(event._id), event.slug || null).catch(() => {});
   return event;
 }
 
 async function deleteEvent(id) {
   const event = await Event.findByIdAndDelete(id);
   if (!event) throw new ApiError(404, 'Event not found');
-  cacheDel(`event:${id}`).catch(() => {});
-  cacheFlushPattern('events:*').catch(() => {});
+  await invalidateEventCache(String(event._id), event.slug || null).catch(() => {});
   return { deleted: true };
 }
 
@@ -617,19 +711,157 @@ async function duplicateEvent(id, userId) {
   const event = await Event.findById(id).lean();
   if (!event) throw new ApiError(404, 'Event not found');
 
-  const { _id, createdAt, updatedAt, ...eventData } = event;
+  const { _id, createdAt, updatedAt, slug: origSlug, ...eventData } = event;
   eventData.title = `${eventData.title} (Copy)`;
+  // Give the duplicate a fresh unique slug
+  eventData.slug = `${origSlug || generateSlug(eventData.title)}-copy-${Date.now().toString(36)}`;
   eventData.status = 'upcoming';
   eventData.registrations = [];
   eventData.attendees = 0;
   eventData.createdBy = userId;
 
   const newEvent = await Event.create(eventData);
+  cacheFlushPattern('events:*').catch(() => {});
   return newEvent;
+}
+
+/**
+ * Self-healing reconciliation: for a given event, find every succeeded Razorpay
+ * payment that does NOT have a matching EventRegistration and create it.
+ *
+ * This fixes the data-integrity gap where a payment succeeds but the inline
+ * registerForEvent/registerGuestForEvent call failed (and was logged but swallowed).
+ * Routing through the events service means the confirmation email also fires.
+ *
+ * Returns the number of registrations backfilled.
+ */
+async function reconcileEventRegistrations(eventId) {
+  const eventsService = require('../events/events.service');
+  const event = await Event.findById(eventId).lean();
+  if (!event) return 0;
+
+  const paidOk = await Payment.find({
+    eventId,
+    status: 'succeeded',
+    // Only heal payments that have NEVER produced a registration. Once a payment
+    // has been registered, it is marked (metadata.registeredAt) so that an admin
+    // deleting the registration afterwards does NOT get it silently recreated.
+    'metadata.registeredAt': { $exists: false },
+  }).lean();
+  if (!paidOk.length) return 0;
+
+  let healed = 0;
+
+  for (const p of paidOk) {
+    try {
+      if (p.userId) {
+        // Logged-in user: registered if their id is in event.registrations OR a reg row exists
+        const already = await EventRegistration.exists({ event: eventId, user: p.userId });
+        if (already) {
+          await markPaymentRegistered(p._id);
+          continue;
+        }
+        await eventsService.registerForEvent(String(eventId), String(p.userId), {
+          ticketTypeName: p.metadata?.ticketTypeName || null,
+          ticketPrice: p.amount,
+          couponUsed: p.metadata?.couponCode || '',
+          fromVerifiedPayment: true,
+          paymentOrderId: p.orderId,
+        });
+        await markPaymentRegistered(p._id);
+        healed += 1;
+      } else if (p.metadata?.isGuest && p.metadata?.guest?.email) {
+        const email = String(p.metadata.guest.email).trim().toLowerCase();
+        const already = await EventRegistration.exists({
+          event: eventId,
+          email,
+          attendanceStatus: { $ne: 'Cancelled' },
+        });
+        if (already) {
+          await markPaymentRegistered(p._id);
+          continue;
+        }
+        await eventsService.registerGuestForEvent(String(eventId), p.metadata.guest, {
+          ticketTypeName: p.metadata?.ticketTypeName || null,
+          ticketPrice: p.amount,
+          couponUsed: p.metadata?.couponCode || '',
+          fromVerifiedPayment: true,
+          paymentOrderId: p.orderId,
+        });
+        await markPaymentRegistered(p._id);
+        healed += 1;
+      }
+    } catch (e) {
+      // "Already registered" is expected/benign here; log anything else.
+      if (!/already registered/i.test(e.message)) {
+        console.error(`[reconcile] event=${eventId} payment=${p._id} error=${e.message}`);
+      }
+    }
+  }
+
+  return healed;
+}
+
+/**
+ * Recompute an event's cached registration counters (guestRegistrations and each
+ * ticketType.sold) from the actual EventRegistration rows. Fixes drift caused by
+ * failed/raced attempts that incremented counters without a completed registration,
+ * or by admin deletions. Also rebuilds the logged-in `registrations` array.
+ * Returns the recomputed totals.
+ */
+async function recountEventRegistrations(eventId) {
+  const event = await Event.findById(eventId);
+  if (!event) throw new ApiError(404, 'Event not found');
+
+  const regs = await EventRegistration.find({
+    event: eventId,
+    attendanceStatus: { $ne: 'Cancelled' },
+  }).select('user ticketTypeName').lean();
+
+  // Logged-in registrations array (unique user ids)
+  const userIds = [...new Set(regs.filter(r => r.user).map(r => String(r.user)))];
+  const guestCount = regs.filter(r => !r.user).length;
+
+  // Per-ticket sold counts by ticketTypeName
+  const soldByTicket = regs.reduce((acc, r) => {
+    const name = r.ticketTypeName || 'General';
+    acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {});
+
+  event.registrations = userIds;
+  event.guestRegistrations = guestCount;
+  if (Array.isArray(event.ticketTypes)) {
+    event.ticketTypes.forEach(t => {
+      t.sold = soldByTicket[t.name] || 0;
+    });
+  }
+  await event.save();
+  await invalidateEventCache(String(event._id), event.slug || null).catch(() => {});
+
+  return {
+    total: regs.length,
+    loggedInRegistrations: userIds.length,
+    guestRegistrations: guestCount,
+    soldByTicket,
+  };
+}
+
+/** Stamp a Payment as having produced a registration (idempotency for reconcile). */
+async function markPaymentRegistered(paymentId) {
+  await Payment.updateOne(
+    { _id: paymentId },
+    { $set: { 'metadata.registeredAt': new Date().toISOString() } }
+  ).catch(err => console.error(`[reconcile] failed to mark payment ${paymentId}: ${err.message}`));
 }
 
 const EVENT_REG_SORT_FIELDS = ['createdAt', 'fullName', 'email', 'attendanceStatus', 'paymentStatus'];
 async function getEventRegistrations(id, { page = 1, limit = 20, search, status, paymentStatus, sort = '-createdAt' }) {
+  // Heal any paid-but-unregistered attendees before listing (best-effort).
+  await reconcileEventRegistrations(id).catch(err =>
+    console.error(`[reconcile] failed for event=${id}: ${err.message}`)
+  );
+
   const query = { event: id };
   if (search) {
     const safe = escapeRegex(search);
@@ -1418,6 +1650,36 @@ async function getPublicEcosystem() {
   return grouped;
 }
 
+// ─── EVENT PARTNERS LIBRARY ─────────────────────────────────────
+async function listEventPartners({ type } = {}) {
+  const query = { isActive: true };
+  if (type) query.type = type;
+  return EventPartner.find(query).sort({ name: 1 }).lean();
+}
+
+async function createEventPartner(data) {
+  return EventPartner.create({
+    name: data.name,
+    logo: data.logo || '',
+    website: data.website || '',
+    description: data.description || '',
+    type: data.type || 'supporting',
+    isActive: data.isActive !== false,
+  });
+}
+
+async function updateEventPartner(id, data) {
+  const partner = await EventPartner.findByIdAndUpdate(id, { $set: data }, { new: true });
+  if (!partner) throw new ApiError(404, 'Partner not found');
+  return partner;
+}
+
+async function deleteEventPartner(id) {
+  const partner = await EventPartner.findByIdAndDelete(id);
+  if (!partner) throw new ApiError(404, 'Partner not found');
+  return { deleted: true };
+}
+
 module.exports = {
   getDashboardAnalytics,
   getMonitoringData,
@@ -1467,6 +1729,8 @@ module.exports = {
   duplicateEvent,
   getEventRegistrations,
   getEventAnalytics,
+  reconcileEventRegistrations,
+  recountEventRegistrations,
   listLeads,
   createLead,
   updateLead,
@@ -1495,4 +1759,8 @@ module.exports = {
   updateMentorApplication,
   listMentorRequests,
   updateMentorRequest,
+  listEventPartners,
+  createEventPartner,
+  updateEventPartner,
+  deleteEventPartner,
 };

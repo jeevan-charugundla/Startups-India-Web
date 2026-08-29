@@ -7,20 +7,6 @@
   transition: all 0.3s ease;
 }
 
-.site-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #e63946, #7c3aed, #3b82f6, #e63946);
-  background-size: 200% 100%;
-  animation: gemini-shimmer 5s linear infinite;
-  z-index: 10001;
-  opacity: 0.6;
-}
-
 /* site logo added */ /*new updates by avinash*/
 
 .Startupsina-logo-white-image {

@@ -11,8 +11,8 @@
   "lang": "en-IN",
   "categories": ["business", "education", "productivity"],
   "icons": [
-    { "src": "/Startupsindia-favicon.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/Startupsindia-favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/Startupsindia-favicon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/Startupsindia-favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [],
   "related_applications": [],

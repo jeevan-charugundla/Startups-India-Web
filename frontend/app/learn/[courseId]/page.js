@@ -1745,7 +1745,7 @@ export default function CourseLearnPage() {
             Enroll to access the learning content.
           </p>
           <p style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1a1a1a', margin: '0 0 24px' }}>
-            {dashboard.course?.priceInr ? `₹${dashboard.course.priceInr.toLocaleString()}` : 'Free'}
+            {dashboard.course?.priceInr ? `₹${Math.round(dashboard.course.priceInr / 100).toLocaleString('en-IN')}` : 'Free'}
           </p>
           <a
             href={`/courses/${dashboard.course?.slug || courseId}`}

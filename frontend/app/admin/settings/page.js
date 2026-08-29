@@ -3,6 +3,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost, apiDelete } from '@/lib/api';
 
+// Keys whose values are stored in paise - display and edit in rupees.
+const PAISE_KEYS = [
+  'grant.evaluation.fee',
+  'grant.preIncubation.fee',
+  'grant.incubation.fee',
+];
+
+function isPaiseKey(key) {
+  return PAISE_KEYS.includes(key);
+}
+
+function formatValue(key, value) {
+  if (typeof value === 'object') return JSON.stringify(value);
+  if (isPaiseKey(key) && Number(value) > 0) {
+    const rupees = (Number(value) / 100).toLocaleString('en-IN');
+    return `₹${rupees} (${value} paise)`;
+  }
+  return String(value);
+}
+
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +44,12 @@ export default function AdminSettingsPage() {
 
   const handleSave = async () => {
     if (!form.key) return;
-    await apiPost('/api/v1/admin/settings', form);
+    let valueToSave = form.value;
+    // Convert rupees → paise before saving fee keys.
+    if (isPaiseKey(form.key) && form.value !== '') {
+      valueToSave = String(Math.round(Number(form.value) * 100));
+    }
+    await apiPost('/api/v1/admin/settings', { ...form, value: valueToSave });
     setShowModal(false);
     setForm({ key: '', value: '', category: 'general', description: '' });
     load();
@@ -34,6 +59,22 @@ export default function AdminSettingsPage() {
     if (!confirm(`Delete setting "${key}"?`)) return;
     await apiDelete(`/api/v1/admin/settings/${encodeURIComponent(key)}`);
     load();
+  };
+
+  const openEdit = s => {
+    // Show fee keys in rupees so the admin types a natural number.
+    let displayValue =
+      typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value);
+    if (isPaiseKey(s.key) && s.value !== '' && s.value !== null) {
+      displayValue = String(Number(s.value) / 100);
+    }
+    setForm({
+      key: s.key,
+      value: displayValue,
+      category: s.category,
+      description: s.description || '',
+    });
+    setShowModal(true);
   };
 
   const categories = ['general', 'email', 'payment', 'seo', 'appearance', 'security'];
@@ -102,13 +143,13 @@ export default function AdminSettingsPage() {
                   </td>
                   <td
                     style={{
-                      maxWidth: 200,
+                      maxWidth: 220,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value)}
+                    {formatValue(s.key, s.value)}
                   </td>
                   <td>
                     <span className="badge badge-gray" style={{ textTransform: 'capitalize' }}>
@@ -133,22 +174,14 @@ export default function AdminSettingsPage() {
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button
                         className="btn btn-secondary btn-sm"
-                        onClick={() => {
-                          setForm({
-                            key: s.key,
-                            value:
-                              typeof s.value === 'object'
-                                ? JSON.stringify(s.value)
-                                : String(s.value),
-                            category: s.category,
-                            description: s.description || '',
-                          });
-                          setShowModal(true);
-                        }}
+                        onClick={() => openEdit(s)}
                       >
                         Edit
                       </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s.key)}>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(s.key)}
+                      >
                         Delete
                       </button>
                     </div>
@@ -196,10 +229,28 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <div className="admin-form-group">
-                <label>Value</label>
+                <label>
+                  Value
+                  {isPaiseKey(form.key) && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: '#7A1F2B',
+                        background: '#fef2f2',
+                        padding: '2px 8px',
+                        borderRadius: 6,
+                      }}
+                    >
+                      Enter in ₹ rupees - saved as paise automatically
+                    </span>
+                  )}
+                </label>
                 <textarea
                   value={form.value}
                   onChange={e => setForm({ ...form, value: e.target.value })}
+                  placeholder={isPaiseKey(form.key) ? 'e.g. 1499 for ₹1,499' : ''}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

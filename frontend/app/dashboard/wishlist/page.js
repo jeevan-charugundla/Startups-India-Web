@@ -162,7 +162,7 @@ export default function WishlistPage() {
           {wishlist.map((course, i) => {
             const isEnrolled = enrolledIds.has(course._id || course.id);
             const isCertified = certifiedIds.has(course._id || course.id);
-            const price = course.priceInr || course.price || 0;
+            const price = Math.round((course.priceInr || course.price || 0) / 100);
             const levelStyle = getLevelStyle(course.level);
 
             return (
@@ -250,7 +250,7 @@ export default function WishlistPage() {
           {wishlist.map((course, i) => {
             const isEnrolled = enrolledIds.has(course._id || course.id);
             const isCertified = certifiedIds.has(course._id || course.id);
-            const price = course.priceInr || course.price || 0;
+            const price = Math.round((course.priceInr || course.price || 0) / 100);
             const levelStyle = getLevelStyle(course.level);
 
             return (

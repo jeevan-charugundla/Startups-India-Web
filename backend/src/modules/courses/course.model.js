@@ -31,8 +31,8 @@ const courseSchema = new mongoose.Schema(
     isPublished: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
     enrollmentStatus: { type: String, enum: ['open', 'closed', 'coming_soon'], default: 'open' },
-    priceInr: { type: Number, default: 0 },
-    originalPriceInr: { type: Number, default: null },
+    priceInr: { type: Number, default: 0 },         // stored in paise (minor units). e.g. ₹499 → 49900
+    originalPriceInr: { type: Number, default: null }, // stored in paise. pre-discount "was" price
     enrolledCount: { type: Number, default: 0 },
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null },
@@ -52,7 +52,7 @@ const courseSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-// Virtual so user-facing pages can use course.price
+// Virtual alias so user-facing pages can use course.price. Returns paise, same as priceInr.
 courseSchema.virtual('price').get(function () {
   return this.priceInr || 0;
 });

@@ -196,7 +196,7 @@ async function getAllBookings({ page = 1, limit = 30 } = {}) {
   // We don't skip/limit on SlotDay level because that would skip entire days,
   // not individual bookings. Fetch all matching days and flatten first.
   // IMPORTANT: {bookedBy: {$ne: null}} does NOT reliably match ObjectId values
-  // in subdoc arrays with MongoDB Atlas — use bookedAt (a Date set on every booking)
+  // in subdoc arrays with MongoDB Atlas - use bookedAt (a Date set on every booking)
   // as the presence indicator instead.
   const days = await SlotDay.find({
     slots: { $elemMatch: { bookedAt: { $exists: true, $type: 'date' } } },
@@ -213,8 +213,8 @@ async function getAllBookings({ page = 1, limit = 30 } = {}) {
           date: day.date,
           time: slot.time,
           mode: slot.mode,
-          bookedBy: slot.bookedBy,         // ObjectId — populated below
-          applicationId: slot.applicationId, // ObjectId — populated below
+          bookedBy: slot.bookedBy,         // ObjectId - populated below
+          applicationId: slot.applicationId, // ObjectId - populated below
           bookedAt: slot.bookedAt,
         });
       }

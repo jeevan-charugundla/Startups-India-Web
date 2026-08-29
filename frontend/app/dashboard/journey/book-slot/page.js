@@ -204,7 +204,7 @@ export default function BookSlotPage() {
               <p style={{ margin: '0 0 3px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Format</p>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '100px', background: isOnline ? '#eff6ff' : '#f0fdf4', border: `1px solid ${isOnline ? '#bfdbfe' : '#bbf7d0'}`, color: isOnline ? '#1d4ed8' : '#047857', fontSize: '13px', fontWeight: 700 }}>
                 {isOnline ? <Video size={14} /> : <MapPin size={14} />}
-                {isOnline ? 'Online — Google Meet / Zoom' : 'In-Person — StartupsIndia Office'}
+                {isOnline ? 'Online - Google Meet / Zoom' : 'In-Person - StartupsIndia Office'}
               </div>
               {isOnline && booked.link && (
                 <p style={{ margin: '8px 0 0', fontSize: '12.5px', color: '#64748b' }}>

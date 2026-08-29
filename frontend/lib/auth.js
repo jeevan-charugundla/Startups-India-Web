@@ -133,10 +133,12 @@ export async function resetPassword(token, password) {
 
 export function getPostAuthRedirect(userData, fallback = '/dashboard') {
   const user = userData?.user || userData;
-  if (!user?.onboarding_completed) return '/onboarding';
+  // Role check must come BEFORE onboarding check - admins, mentors, and investors
+  // should never be redirected to the regular onboarding flow regardless of the flag.
   if (user?.role === 'admin') return `/${ADMIN_SLUG}/dashboard`;
   if (user?.role === 'mentor') return '/dashboard/mentor';
   if (user?.role === 'investor') return '/dashboard/investor';
+  if (!user?.onboarding_completed) return '/onboarding';
   return fallback;
 }
 

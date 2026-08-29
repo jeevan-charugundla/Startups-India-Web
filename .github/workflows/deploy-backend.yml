@@ -1,13 +1,13 @@
 name: Deploy Backend (EC2)
 
-# Auto-deploys the backend to EC2 on every push to main — but ONLY when
+# Auto-deploys the backend to EC2 on every push to main - but ONLY when
 # something under backend/ (or this workflow) changed. Frontend pushes are
 # ignored (Vercel handles the frontend).
 #
 # How auth works (private repo, no key on the server):
 #   - The runner checks out the repo using GitHub's built-in token (auto).
 #   - It ships ONLY the backend/ folder to EC2 over rsync, using the EC2 SSH key.
-#   - EC2 never authenticates to GitHub — so no deploy key needed there.
+#   - EC2 never authenticates to GitHub - so no deploy key needed there.
 on:
   push:
     branches: [main]
@@ -89,7 +89,7 @@ jobs:
               echo "✓ Backend deployed and healthy"
             else
               # ── AUTO-ROLLBACK ─────────────────────────────────────
-              echo "✗ Health check FAILED — rolling back to previous version…"
+              echo "✗ Health check FAILED - rolling back to previous version…"
               pm2 logs --nostream --lines 50 || true
 
               # Restore the backup
@@ -105,9 +105,9 @@ jobs:
               # Verify rollback worked
               sleep 10
               if curl -sf http://localhost:5000/health >/dev/null; then
-                echo "⚠ ROLLBACK SUCCESSFUL — server restored to previous version"
+                echo "⚠ ROLLBACK SUCCESSFUL - server restored to previous version"
               else
-                echo "💥 ROLLBACK ALSO FAILED — manual intervention needed!"
+                echo "💥 ROLLBACK ALSO FAILED - manual intervention needed!"
               fi
               exit 1
             fi

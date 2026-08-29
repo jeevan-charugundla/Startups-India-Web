@@ -96,6 +96,24 @@ const eventSchema = new mongoose.Schema(
         bio: { type: String },
       },
     ],
+    chiefGuests: [
+      {
+        name: { type: String },
+        description: { type: String },
+        logo: { type: String },
+        website: { type: String },
+        linkedinProfile: { type: String },
+      },
+    ],
+    specialGuests: [
+      {
+        name: { type: String },
+        description: { type: String },
+        logo: { type: String },
+        website: { type: String },
+        linkedinProfile: { type: String },
+      },
+    ],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

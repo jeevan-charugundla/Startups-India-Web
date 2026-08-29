@@ -55,8 +55,9 @@ export default function AdminCoursesPage() {
       title: course.title,
       subtitle: course.subtitle || '',
       description: course.description || '',
-      priceInr: course.priceInr || 0,
-      originalPriceInr: course.originalPriceInr || 0,
+      // DB stores paise - show rupees in the form
+      priceInr: course.priceInr ? course.priceInr / 100 : 0,
+      originalPriceInr: course.originalPriceInr ? course.originalPriceInr / 100 : 0,
       category: course.category || '',
       level: course.level || '',
       difficultyLevel: course.difficultyLevel || 'beginner',
@@ -69,10 +70,18 @@ export default function AdminCoursesPage() {
     });
   };
 
+  // Convert rupees → paise before sending to the backend
+  function toPaise(rupees) {
+    return Math.round(Number(rupees || 0) * 100);
+  }
+
   const handleSave = async () => {
     if (!editCourse) return;
     if (!confirm(`Save changes to "${editCourse.title}"?`)) return;
     const payload = { ...form };
+    // Convert rupees → paise before saving
+    payload.priceInr = toPaise(form.priceInr);
+    payload.originalPriceInr = toPaise(form.originalPriceInr);
     if (payload.startDate) payload.startDate = new Date(payload.startDate).toISOString();
     else payload.startDate = null;
     if (payload.endDate) payload.endDate = new Date(payload.endDate).toISOString();
@@ -86,6 +95,9 @@ export default function AdminCoursesPage() {
     if (!form.title) return alert('Course title is required.');
     if (!confirm(`Create new course "${form.title}"?`)) return;
     const payload = { ...form };
+    // Convert rupees → paise before saving
+    payload.priceInr = toPaise(form.priceInr);
+    payload.originalPriceInr = toPaise(form.originalPriceInr);
     if (payload.startDate) payload.startDate = new Date(payload.startDate).toISOString();
     else payload.startDate = null;
     if (payload.endDate) payload.endDate = new Date(payload.endDate).toISOString();
@@ -138,7 +150,7 @@ export default function AdminCoursesPage() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div className="admin-form-group">
-          <label>Price (INR)</label>
+          <label>Price (₹)</label>
           <input
             type="number"
             value={form.priceInr || 0}
@@ -146,7 +158,7 @@ export default function AdminCoursesPage() {
           />
         </div>
         <div className="admin-form-group">
-          <label>Original Price (INR)</label>
+          <label>Original Price (₹) - pre-discount</label>
           <input
             type="number"
             value={form.originalPriceInr || 0}
@@ -323,7 +335,7 @@ export default function AdminCoursesPage() {
                   <td style={{ fontWeight: 600, maxWidth: 220 }}>{c.title}</td>
                   <td style={{ color: '#64748b' }}>{c.category || '-'}</td>
                   <td style={{ fontWeight: 600 }}>
-                    {c.priceInr ? `₹${c.priceInr.toLocaleString()}` : 'Free'}
+                    {c.priceInr ? `₹${(c.priceInr / 100).toLocaleString('en-IN')}` : 'Free'}
                   </td>
                   <td style={{ fontSize: 12, color: '#64748b' }}>
                     {c.startDate ? new Date(c.startDate).toLocaleDateString() : '-'}

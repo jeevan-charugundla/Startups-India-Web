@@ -58,6 +58,9 @@ function CourseCard({ course, index }) {
   const displayModules = 8;
   const displayLessons = 58;
   const displayStudents = '65+';
+  // priceInr is stored in paise - divide by 100 for display
+  const priceDisplay = Math.round((course.priceInr || course.price || 0) / 100);
+  const originalPriceDisplay = course.originalPriceInr ? Math.round(course.originalPriceInr / 100) : 0;
   const hasDiscount =
     course.originalPriceInr && course.originalPriceInr > (course.priceInr || course.price || 0);
   const discountPct = hasDiscount
@@ -177,13 +180,13 @@ function CourseCard({ course, index }) {
             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold text-gray-900">
-                  {(course.priceInr || course.price) > 0
-                    ? `₹${(course.priceInr || course.price).toLocaleString()}`
+                  {priceDisplay > 0
+                    ? `₹${priceDisplay.toLocaleString('en-IN')}`
                     : 'Free'}
                 </span>
                 {hasDiscount && (
                   <span className="text-sm text-gray-400 line-through">
-                    ₹{course.originalPriceInr.toLocaleString()}
+                    ₹{originalPriceDisplay.toLocaleString('en-IN')}
                   </span>
                 )}
               </div>

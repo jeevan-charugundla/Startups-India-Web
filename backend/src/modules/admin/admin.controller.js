@@ -303,6 +303,11 @@ async function getEventAnalytics(req, res) {
   res.json({ success: true, data });
 }
 
+async function recountEventRegistrations(req, res) {
+  const data = await adminService.recountEventRegistrations(req.params.id);
+  res.json({ success: true, data });
+}
+
 // ─── LEADS/CRM ──────────────────────────────────────────────────
 async function getLeads(req, res) {
   const { page, limit, status, sort } = req.query;
@@ -523,6 +528,7 @@ module.exports = {
   duplicateEvent,
   getEventRegistrations,
   getEventAnalytics,
+  recountEventRegistrations,
   getLeads,
   createLead,
   updateLead,
@@ -556,6 +562,10 @@ module.exports = {
   sendEmailToAll,
   sendEmailToRole,
   getEmailStats,
+  getEventPartners,
+  createEventPartner,
+  updateEventPartner,
+  deleteEventPartner,
 };
 
 // ─── PUSH NOTIFICATIONS ─────────────────────────────────────────
@@ -614,5 +624,27 @@ async function sendEmailToRole(req, res) {
 async function getEmailStats(req, res) {
   const { getEmailStats: stats } = require('../../utils/emailService');
   const data = await stats();
+  res.json({ success: true, data });
+}
+
+// ─── EVENT PARTNERS LIBRARY ─────────────────────────────────────
+async function getEventPartners(req, res) {
+  const { type } = req.query;
+  const data = await adminService.listEventPartners({ type });
+  res.json({ success: true, data });
+}
+
+async function createEventPartner(req, res) {
+  const data = await adminService.createEventPartner(req.body);
+  res.status(201).json({ success: true, data });
+}
+
+async function updateEventPartner(req, res) {
+  const data = await adminService.updateEventPartner(req.params.id, req.body);
+  res.json({ success: true, data });
+}
+
+async function deleteEventPartner(req, res) {
+  const data = await adminService.deleteEventPartner(req.params.id);
   res.json({ success: true, data });
 }

@@ -57,11 +57,11 @@ export function usePushNotification({ onMessage } = {}) {
 
     runningRef.current = true;
     try {
-      const { requestNotificationPermission, onForegroundMessage } = await import('@/lib/firebase');
+      const firebaseLib = await import('@/lib/firebase');
+      if (!firebaseLib || !firebaseLib.requestNotificationPermission) return;
 
-      const token = await requestNotificationPermission();
+      const token = await firebaseLib.requestNotificationPermission();
       if (!token) {
-        console.error('[FCM] No token - verify NEXT_PUBLIC_FIREBASE_* env vars are set in Vercel');
         return;
       }
 
@@ -87,10 +87,12 @@ export function usePushNotification({ onMessage } = {}) {
       }
 
       if (typeof unsubRef.current === 'function') unsubRef.current();
-      const unsub = await onForegroundMessage((payload) => {
-        if (onMessage) onMessage(payload);
-      });
-      unsubRef.current = unsub;
+      if (firebaseLib.onForegroundMessage) {
+        const unsub = await firebaseLib.onForegroundMessage((payload) => {
+          if (onMessage) onMessage(payload);
+        });
+        unsubRef.current = unsub;
+      }
     } catch (err) {
       console.error('[FCM] init error:', err);
     } finally {

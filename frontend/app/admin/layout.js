@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import '../../styles/admin-panel.css';
+import { clearLoggedInFlag } from '@/lib/api';
+import { signOut } from '@/lib/auth';
 
 const PushToast = dynamic(() => import('@/components/ui/PushToast'), { ssr: false });
 
@@ -37,6 +39,7 @@ const navSections = [
     items: [
       { id: 'articles', label: 'Sources / Articles', href: `${ADMIN_BASE}/articles`, icon: 'edit' },
       { id: 'events', label: 'Events', href: `${ADMIN_BASE}/events`, icon: 'calendar' },
+      { id: 'event-partners', label: 'Partners Library', href: `${ADMIN_BASE}/event-partners`, icon: 'handshake' },
       { id: 'testimonials', label: 'Testimonials', href: `${ADMIN_BASE}/testimonials`, icon: 'star' },
       {
         id: 'ecosystem',
@@ -309,6 +312,7 @@ function clearAdminSession() {
   localStorage.removeItem('admin_session');
   localStorage.removeItem('admin_session_expiry');
   localStorage.removeItem('refresh_token');
+  clearLoggedInFlag();
 }
 
 export default function AdminLayout({ children }) {
@@ -441,12 +445,10 @@ export default function AdminLayout({ children }) {
 
   if (!isAdmin) return null;
 
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('admin_session');
-    localStorage.removeItem('admin_session_expiry');
-    localStorage.removeItem('refresh_token');
-    router.push(`${ADMIN_BASE}/login`);
+  const handleLogout = async () => {
+    await signOut();
+    clearAdminSession();
+    router.replace('/');
   };
 
   // pathname from usePathname() is the rewritten /admin/* path (what Next.js sees internally).

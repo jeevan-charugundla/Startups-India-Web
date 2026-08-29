@@ -19,6 +19,7 @@ async function decorateCourseMedia(course) {
   return {
     ...course,
     thumbnailUrl: await signFileUrl(course.thumbnailUrl, course.thumbnailKey),
+    // price is in paise, same as priceInr
     price: course.priceInr || 0,
   };
 }
@@ -53,6 +54,7 @@ async function listCourses(options = {}) {
   }
 
   if (minPrice !== undefined || maxPrice !== undefined) {
+    // minPrice / maxPrice are expected in paise to match how priceInr is stored.
     filter.priceInr = {};
     if (minPrice !== undefined) filter.priceInr.$gte = Number(minPrice);
     if (maxPrice !== undefined) filter.priceInr.$lte = Number(maxPrice);

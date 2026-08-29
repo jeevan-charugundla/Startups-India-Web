@@ -35,6 +35,7 @@ async function upsertEnrollment(userId, input) {
   if (!input.paymentVerified) {
     const course = await Course.findById(input.courseId).select('priceInr').lean();
     if (!course) throw new ApiError(404, 'Course not found');
+    // priceInr is stored in paise; 0 means free regardless of unit.
     if (course.priceInr > 0) {
       throw new ApiError(403, 'Payment not verified. Enrollment not allowed.');
     }

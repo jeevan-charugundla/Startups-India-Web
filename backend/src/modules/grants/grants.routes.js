@@ -294,7 +294,7 @@ router.post(
   })
 );
 
-// Cancel existing slot booking (used by reschedule flow — cancel then rebook)
+// Cancel existing slot booking (used by reschedule flow - cancel then rebook)
 router.delete(
   '/slots/cancel',
   validateBody(z.object({ applicationId: objectId })),

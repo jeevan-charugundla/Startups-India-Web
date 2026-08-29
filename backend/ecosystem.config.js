@@ -12,7 +12,7 @@ module.exports = {
       cwd: __dirname,
 
       // ─── CLUSTER MODE ──────────────────────────────────
-      // t3.micro has 1GB RAM — running 2 workers (max) causes OOM kills.
+      // t3.micro has 1GB RAM - running 2 workers (max) causes OOM kills.
       // Use PM2_INSTANCES env var to override (e.g. PM2_INSTANCES=2 on a
       // larger instance). Default to 1 for safety.
       instances: parseInt(process.env.PM2_INSTANCES, 10) || 1,
@@ -21,7 +21,7 @@ module.exports = {
       // ─── RESTART POLICIES ──────────────────────────────
       max_memory_restart: '400M',
       autorestart: true,
-      max_restarts: 25,                // was 10 — give more chances before giving up
+      max_restarts: 25,                // was 10 - give more chances before giving up
       restart_delay: 3000,             // 3s delay between restarts (was 1s)
       min_uptime: '30s',               // consider stable after 30s (was 10s)
       exp_backoff_restart_delay: 100,  // exponential backoff: 100ms → 200ms → 400ms → …

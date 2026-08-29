@@ -35,7 +35,7 @@ function buildRedirectUrl(link) {
 
 /**
  * Parse a User-Agent string into structured device/browser/os fields.
- * Intentionally lightweight — no external dependency needed.
+ * Intentionally lightweight - no external dependency needed.
  */
 function parseUserAgent(ua = '') {
   const s = ua.toLowerCase();
@@ -246,7 +246,7 @@ async function recordScanAndGetRedirect(shortCode, req) {
   const ua = req.headers['user-agent'] || '';
   const { deviceType, browser, os } = parseUserAgent(ua);
 
-  // Fire-and-forget scan recording — don't delay the redirect
+  // Fire-and-forget scan recording - don't delay the redirect
   setImmediate(async () => {
     try {
       await CampaignScan.create({
@@ -259,7 +259,7 @@ async function recordScanAndGetRedirect(shortCode, req) {
         referrer: (req.headers['referer'] || req.headers['referrer'] || '').slice(0, 500),
       });
     } catch {
-      // Non-critical — never crash the redirect
+      // Non-critical - never crash the redirect
     }
   });
 

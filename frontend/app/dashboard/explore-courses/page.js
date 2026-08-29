@@ -791,7 +791,7 @@ export default function ExplorePage() {
             {filtered.map((course, i) => {
               const isEnrolled = enrolledIds.has(course._id);
               const isCertified = certifiedIds.has(course._id);
-              const price = course.priceInr || course.price || 0;
+              const price = Math.round((course.priceInr || course.price || 0) / 100);
               const thumbnailUrl = course.thumbnailUrl || course.thumbnail;
               const levelStyle = getLevelStyle(course.level);
               const isWishlisted = wishlistSet.has(course._id);
@@ -1262,7 +1262,7 @@ export default function ExplorePage() {
             {filtered.map((course, i) => {
               const isEnrolled = enrolledIds.has(course._id);
               const isCertified = certifiedIds.has(course._id);
-              const price = course.priceInr || course.price || 0;
+              const price = Math.round((course.priceInr || course.price || 0) / 100);
               const thumbnailUrl = course.thumbnailUrl || course.thumbnail;
               const levelStyle = getLevelStyle(course.level);
               const isWishlisted = wishlistSet.has(course._id);

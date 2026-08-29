@@ -286,7 +286,7 @@ export default function CourseDetailPage() {
       list.splice(idx, 1);
       setWishlisted(false);
     } else {
-      list.push({ _id: course._id, title: course.title, price: course.priceInr || course.price, slug: course.slug });
+      list.push({ _id: course._id, title: course.title, price: priceInPaise, slug: course.slug });
       setWishlisted(true);
     }
     localStorage.setItem('wishlist', JSON.stringify(list));
@@ -302,9 +302,12 @@ export default function CourseDetailPage() {
     }
   }
 
-  const price = course?.priceInr || course?.price || 0;
-  const hasDiscount = course?.originalPriceInr && course.originalPriceInr > price;
-  const discountPercent = hasDiscount ? Math.round(((course.originalPriceInr - price) / course.originalPriceInr) * 100) : 0;
+  // priceInr is stored in paise - divide by 100 for display
+  const priceInPaise = course?.priceInr || course?.price || 0;
+  const price = Math.round(priceInPaise / 100);
+  const originalPriceInPaise = course?.originalPriceInr || 0;
+  const hasDiscount = originalPriceInPaise > priceInPaise && originalPriceInPaise > 0;
+  const discountPercent = hasDiscount ? Math.round(((originalPriceInPaise - priceInPaise) / originalPriceInPaise) * 100) : 0;
   const displayStudents = (course?.enrolledCount || 0) + 124;
 
   if (loading) return <DetailSkeleton />;
@@ -553,8 +556,8 @@ export default function CourseDetailPage() {
               <div className="mb-8">
                 <p className="text-[10px] font-black text-[#800000] uppercase tracking-widest mb-2">Program Access</p>
                 <div className="flex items-baseline gap-4">
-                  <span className="text-5xl font-black text-gray-900 tracking-tighter">{price > 0 ? `₹${price.toLocaleString()}` : 'Free'}</span>
-                  {hasDiscount && <span className="text-xl text-gray-400 line-through font-bold">₹{course.originalPriceInr.toLocaleString()}</span>}
+                  <span className="text-5xl font-black text-gray-900 tracking-tighter">{price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'Free'}</span>
+                  {hasDiscount && <span className="text-xl text-gray-400 line-through font-bold">₹{Math.round(originalPriceInPaise / 100).toLocaleString('en-IN')}</span>}
                 </div>
               </div>
               <div className="space-y-4 mb-8">

@@ -42,15 +42,52 @@ router.post(
 );
 
 router.post(
+  '/razorpay/guest/order',
+  validateBody(
+    z.object({
+      eventId: z.string().min(1),
+      amount: z.number().nonnegative(),
+      currency: z.string().optional(),
+      receipt: z.string().optional(),
+      ticketTypeName: z.string().optional(),
+      couponCode: z.string().optional(),
+      notes: z.record(z.string()).optional(),
+      metadata: z.record(z.any()).optional(),
+      guest: z.object({
+        fullName: z.string().min(1),
+        email: z.string().email(),
+        phoneNumber: z.string().min(1),
+        collegeCompany: z.string().optional(),
+      }),
+    })
+  ),
+  asyncHandler(controller.createGuestRazorpayOrder)
+);
+
+router.post(
+  '/razorpay/guest/verify',
+  validateBody(
+    z.object({
+      orderId: z.string().min(1),
+      paymentId: z.string().min(1),
+      signature: z.string().min(1),
+    })
+  ),
+  asyncHandler(controller.verifyGuestRazorpayPayment)
+);
+
+router.post(
   '/razorpay/order',
   authRequired,
   validateBody(
     z.object({
       courseId: z.string().min(1).optional(),
       eventId: z.string().min(1).optional(),
-      amount: z.number().positive(),
+      amount: z.number().nonnegative(),
       currency: z.string().optional(),
       receipt: z.string().optional(),
+      ticketTypeName: z.string().optional(),
+      couponCode: z.string().optional(),
       notes: z.record(z.string()).optional(),
       metadata: z.record(z.any()).optional(),
     })

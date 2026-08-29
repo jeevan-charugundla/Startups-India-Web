@@ -38,7 +38,7 @@ const trackingLinkSchema = new mongoose.Schema(
     label: { type: String, trim: true }, // e.g. "Instagram Poster", "Entry Banner"
     isActive: { type: Boolean, default: true },
 
-    // Denormalised scan counter — incremented atomically on each scan
+    // Denormalised scan counter - incremented atomically on each scan
     scanCount: { type: Number, default: 0 },
   },
   { timestamps: true }

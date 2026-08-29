@@ -26,7 +26,7 @@ campaignsAdminRouter.delete('/:campaignId/links/:linkId', asyncHandler(ctrl.dele
 campaignsAdminRouter.get('/:campaignId/links/:linkId/analytics', asyncHandler(ctrl.getLinkAnalytics));
 
 // ─── Public redirect endpoint ─────────────────────────────────────────────────
-// Mounted at /r/:code — no auth, no admin slug
+// Mounted at /r/:code - no auth, no admin slug
 const redirectRouter = Router();
 redirectRouter.get('/:code', asyncHandler(ctrl.redirect));
 

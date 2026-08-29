@@ -16,7 +16,7 @@ const enrollmentSchema = new mongoose.Schema(
       default: 'enrolled',
     },
     paymentMethod: { type: String, default: null },
-    amountPaid: { type: Number, default: 0 },
+    amountPaid: { type: Number, default: 0 }, // stored in paise (minor units), copied from Payment.amount
     stripePaymentId: { type: String, default: null },
     progress: { type: Number, default: 0 },
     completed: { type: Boolean, default: false },

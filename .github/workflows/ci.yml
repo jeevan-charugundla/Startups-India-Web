@@ -244,7 +244,7 @@ jobs:
               process.exit(1);
             }
           " || {
-            echo "💥 Backend boot test FAILED — this deploy would crash EC2!"
+            echo "💥 Backend boot test FAILED - this deploy would crash EC2!"
             exit 1
           }
         working-directory: backend

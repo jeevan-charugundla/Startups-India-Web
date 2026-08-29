@@ -179,9 +179,13 @@ export const metadata = {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
   },
   icons: {
-    icon: '/Startupsindia-favicon.png',
-    shortcut: '/Startupsindia-favicon.png',
-    apple: '/Startupsindia-favicon.png',
+    icon: [
+      { url: '/Startupsindia-favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/Startupsindia-favicon.png', sizes: '96x96', type: 'image/png' },
+      { url: '/Startupsindia-favicon.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: [{ url: '/Startupsindia-favicon.png', type: 'image/png' }],
+    apple: [{ url: '/Startupsindia-favicon.png', sizes: '180x180', type: 'image/png' }],
   },
   manifest: '/manifest.json',
   other: {

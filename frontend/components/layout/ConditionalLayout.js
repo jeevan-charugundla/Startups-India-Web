@@ -26,6 +26,16 @@ const ONBOARDING_EXEMPT = [
   '/cookies',
 ];
 
+// Onboarding is required for account workflows, not for public content.
+// Keep marketing, event, ecosystem, and other informational pages discoverable.
+const ONBOARDING_PROTECTED = [
+  '/dashboard',
+  '/learn',
+  '/checkout',
+  '/profile',
+  '/settings',
+];
+
 // ── Blocking screen shown while the /me check is in-flight ───────────────────
 function CheckingScreen() {
   return (
@@ -158,7 +168,8 @@ function OnboardingGate({ children }) {
   const isExempt =
     !pathname ||
     ONBOARDING_EXEMPT.some((p) => pathname === p || pathname.startsWith(p + '/')) ||
-    pathname.startsWith(`/${ADMIN_SLUG}`);
+    pathname.startsWith(`/${ADMIN_SLUG}`) ||
+    !ONBOARDING_PROTECTED.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   useEffect(() => {
     // Exempt routes pass through immediately - no API call at all

@@ -189,7 +189,7 @@ router.post(
       nextStatus = 'rejected';
     }
 
-    // Notification copy — score is NOT revealed here; it's a surprise shown
+    // Notification copy - score is NOT revealed here; it's a surprise shown
     // on the Idea Validation page 2 hours before the session (or immediately
     // after admin scores, per scoreRevealed logic in grant.phases.js).
     const notifTitle = n >= 1 ? '🎉 Idea Validation Complete!' : 'Application Update';
@@ -230,7 +230,7 @@ router.post(
       metadata: { score: n, nextStatus },
     });
 
-    // In-app notification — no score in the message
+    // In-app notification - no score in the message
     await notifyUser({
       userId: application.userId,
       title: notifTitle,
@@ -243,7 +243,7 @@ router.post(
       },
     });
 
-    // FCM push notification — no score in the body
+    // FCM push notification - no score in the body
     await sendToUser(application.userId, {
       title: notifTitle,
       body: notifMessage,

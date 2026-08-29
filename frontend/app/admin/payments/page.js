@@ -34,6 +34,36 @@ export default function AdminPaymentsPage() {
     load();
   };
 
+  // Returns a human-readable label for what the payment was for
+  function purposeLabel(p) {
+    if (p.type === 'grant_evaluation') {
+      const ref = p.grantApplication?.ref;
+      const startup = p.grantApplication?.startup;
+      if (startup) return `Grant Eval - ${startup}`;
+      if (ref) return `Grant Eval - ${ref}`;
+      return 'Grant Evaluation';
+    }
+    if (p.courseId?.title) return p.courseId.title;
+    if (p.eventId?.title) return p.eventId.title;
+    if (p.metadata?.isGuest && p.eventId) return 'Guest Event Registration';
+    return '-';
+  }
+
+  // Badge label - for grant rows, show the raw Razorpay-vocab status
+  function statusLabel(p) {
+    if (p.type === 'grant_evaluation' && p.grantStatus) {
+      return p.grantStatus; // 'paid', 'created', 'failed', 'expired'
+    }
+    return p.status;
+  }
+
+  function statusBadgeClass(p) {
+    const s = p.status; // already normalised: 'succeeded' for paid grants
+    if (s === 'succeeded') return 'badge-green';
+    if (s === 'failed' || s === 'refunded') return 'badge-red';
+    return 'badge-yellow';
+  }
+
   return (
     <div className="admin-page">
       <div
@@ -43,10 +73,15 @@ export default function AdminPaymentsPage() {
           padding: '18px 28px',
           background: '#fff',
           borderBottom: '1px solid #e2e8f0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>Payments</h1>
-        <span style={{ fontSize: 13, color: '#64748b' }}>{total} transactions</span>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>Payments</h1>
+          <span style={{ fontSize: 13, color: '#64748b' }}>{total} transactions</span>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
@@ -65,7 +100,7 @@ export default function AdminPaymentsPage() {
           }}
         >
           <option value="">All Status</option>
-          <option value="succeeded">Succeeded</option>
+          <option value="succeeded">Succeeded / Paid</option>
           <option value="created">Pending</option>
           <option value="failed">Failed</option>
           <option value="refunded">Refunded</option>
@@ -82,7 +117,8 @@ export default function AdminPaymentsPage() {
             <thead>
               <tr>
                 <th>User</th>
-                <th>Course</th>
+                <th>Purpose</th>
+                <th>Type</th>
                 <th>Amount</th>
                 <th>Provider</th>
                 <th>Status</th>
@@ -94,35 +130,63 @@ export default function AdminPaymentsPage() {
               {payments.map(p => (
                 <tr key={p._id}>
                   <td style={{ fontWeight: 500 }}>
-                    {p.userId?.fullName || p.userId?.email || '-'}
+                    {p.userId?.fullName
+                      || p.userId?.email
+                      || p.metadata?.guest?.fullName
+                      || p.metadata?.guest?.email
+                      || (p.metadata?.isGuest ? 'Guest' : '-')}
                   </td>
-                  <td style={{ color: '#64748b' }}>{p.courseId?.title || '-'}</td>
-                  <td style={{ fontWeight: 700 }}>₹{(p.amount / 100).toLocaleString()}</td>
+                  <td style={{ color: '#374151', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {purposeLabel(p)}
+                  </td>
+                  <td>
+                    <span
+                      className="badge"
+                      style={{
+                        background: p.type === 'grant_evaluation' ? '#fef9c3' : '#eff6ff',
+                        color: p.type === 'grant_evaluation' ? '#854d0e' : '#1d4ed8',
+                        fontWeight: 600,
+                        fontSize: 11,
+                      }}
+                    >
+                      {p.type === 'grant_evaluation' ? 'Grant Eval' : 'Course / Event'}
+                    </span>
+                  </td>
+                  <td style={{ fontWeight: 700 }}>
+                    ₹{((p.amount || 0) / 100).toLocaleString('en-IN')}
+                  </td>
                   <td>
                     <span className="badge badge-gray">{p.provider}</span>
                   </td>
                   <td>
-                    <span
-                      className={`badge ${p.status === 'succeeded' ? 'badge-green' : p.status === 'refunded' ? 'badge-red' : p.status === 'failed' ? 'badge-red' : 'badge-yellow'}`}
-                    >
-                      {p.status}
+                    <span className={`badge ${statusBadgeClass(p)}`}>
+                      {statusLabel(p)}
                     </span>
                   </td>
                   <td style={{ fontSize: 12.5, color: '#94a3b8' }}>
                     {new Date(p.createdAt).toLocaleDateString()}
                   </td>
                   <td>
-                    {p.status === 'succeeded' && (
-                      <button className="btn btn-danger btn-sm" onClick={() => handleRefund(p._id)}>
+                    {/* Only regular payments that succeeded can be refunded */}
+                    {p.type !== 'grant_evaluation' && p.status === 'succeeded' && (
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleRefund(p._id)}
+                      >
                         Refund
                       </button>
+                    )}
+                    {p.type === 'grant_evaluation' && p.invoiceNumber && (
+                      <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>
+                        {p.invoiceNumber}
+                      </span>
                     )}
                   </td>
                 </tr>
               ))}
               {payments.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
                     No payments found
                   </td>
                 </tr>

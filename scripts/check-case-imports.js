@@ -10,8 +10,8 @@
  * In CI (Linux) it catches them before they ever reach production.
  *
  * Exit code:
- *   0 — all imports match
- *   1 — at least one case-mismatch found
+ *   0 - all imports match
+ *   1 - at least one case-mismatch found
  *
  * Usage:
  *   node scripts/check-case-imports.js
@@ -77,7 +77,7 @@ function caseMatches(resolvedPath) {
       }
       current = path.join(current, match);
     } catch {
-      // Directory doesn't exist — skip
+      // Directory doesn't exist - skip
       return { ok: true };
     }
   }
@@ -126,7 +126,7 @@ for (const file of allFiles) {
     const resolved = tryResolve(dir, specifier);
 
     if (!resolved) {
-      // Module not found at all — Node will throw at runtime regardless of OS
+      // Module not found at all - Node will throw at runtime regardless of OS
       const lineNum =
         content.substring(0, m.index).split('\n').length;
       console.error(

@@ -10,9 +10,11 @@ function cx(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-function formatCurrency(value) {
-  if (!value) return 'Free';
-  return `Rs ${Number(value).toLocaleString('en-IN')}`;
+// Amounts are stored in paise - divide by 100 before displaying as rupees.
+function formatCurrency(paise) {
+  if (!paise) return 'Free';
+  const rupees = Number(paise) / 100;
+  return `Rs ${rupees.toLocaleString('en-IN')}`;
 }
 
 function pluralize(value, label) {

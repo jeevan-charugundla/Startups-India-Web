@@ -70,6 +70,8 @@ export default function AdminEventsPage() {
     outcomes: [],
     timeline: [],
     speakers: [],
+    chiefGuests: [],
+    specialGuests: [],
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -147,6 +149,8 @@ export default function AdminEventsPage() {
       outcomes: ev.outcomes || [],
       timeline: ev.timeline || [],
       speakers: ev.speakers || ev.artists || [],
+      chiefGuests: ev.chiefGuests || [],
+      specialGuests: ev.specialGuests || [],
     });
     setShowModal(true);
   };
@@ -692,6 +696,82 @@ export default function AdminEventsPage() {
 
                     <textarea style={{ gridColumn: 'span 2' }} value={speaker.bio} onChange={e => { const s = [...form.speakers]; s[idx].bio = e.target.value; setForm({...form, speakers: s}); }} placeholder="Short Bio" rows={2} />
                     <button type="button" onClick={() => { const s = [...form.speakers]; s.splice(idx, 1); setForm({...form, speakers: s}); }} style={{ color: 'red', background: 'transparent', border: 'none', cursor: 'pointer', gridColumn: 'span 2', textAlign: 'right', fontSize: 12 }}>Remove Speaker</button>
+                  </div>
+                ))}
+              </div>
+
+              <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 16, marginTop: 24 }}>Chief Guests</h3>
+              <div className="admin-form-group">
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Chief Guests</span>
+                  <button type="button" className="btn btn-sm" onClick={() => setForm({...form, chiefGuests: [...(form.chiefGuests || []), { name: '', description: '', logo: '', website: '', linkedinProfile: '' }]})}>+ Add Chief Guest</button>
+                </label>
+                {(form.chiefGuests || []).map((guest, idx) => (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12, background: '#f8fafc', padding: 12, borderRadius: 8 }}>
+                    <input value={guest.name} onChange={e => { const g = [...form.chiefGuests]; g[idx].name = e.target.value; setForm({...form, chiefGuests: g}); }} placeholder="Guest Name (e.g. G. Satheesh Reddy)" />
+                    <input value={guest.description} onChange={e => { const g = [...form.chiefGuests]; g[idx].description = e.target.value; setForm({...form, chiefGuests: g}); }} placeholder="Designation / Description" />
+                    <input value={guest.website} onChange={e => { const g = [...form.chiefGuests]; g[idx].website = e.target.value; setForm({...form, chiefGuests: g}); }} placeholder="Website URL (Optional)" />
+                    <input value={guest.linkedinProfile} onChange={e => { const g = [...form.chiefGuests]; g[idx].linkedinProfile = e.target.value; setForm({...form, chiefGuests: g}); }} placeholder="LinkedIn URL (Optional)" />
+                    
+                    <div style={{ gridColumn: 'span 2', display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingImage}
+                        onChange={e => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleImageUpload(e.target.files[0], url => {
+                              const g = [...form.chiefGuests];
+                              g[idx].logo = url;
+                              setForm({ ...form, chiefGuests: g });
+                            });
+                          }
+                        }}
+                      />
+                      {guest.logo && (
+                        <img src={guest.logo} alt="Preview" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 20 }} />
+                      )}
+                      <input style={{ flex: 1 }} value={guest.logo} onChange={e => { const g = [...form.chiefGuests]; g[idx].logo = e.target.value; setForm({...form, chiefGuests: g}); }} placeholder="Or enter image URL" />
+                    </div>
+
+                    <button type="button" onClick={() => { const g = [...form.chiefGuests]; g.splice(idx, 1); setForm({...form, chiefGuests: g}); }} style={{ color: 'red', background: 'transparent', border: 'none', cursor: 'pointer', gridColumn: 'span 2', textAlign: 'right', fontSize: 12 }}>Remove Chief Guest</button>
+                  </div>
+                ))}
+              </div>
+
+              <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 16, marginTop: 24 }}>Special Guests</h3>
+              <div className="admin-form-group">
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Special Guests</span>
+                  <button type="button" className="btn btn-sm" onClick={() => setForm({...form, specialGuests: [...(form.specialGuests || []), { name: '', description: '', logo: '', website: '', linkedinProfile: '' }]})}>+ Add Special Guest</button>
+                </label>
+                {(form.specialGuests || []).map((guest, idx) => (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12, background: '#f8fafc', padding: 12, borderRadius: 8 }}>
+                    <input value={guest.name} onChange={e => { const g = [...form.specialGuests]; g[idx].name = e.target.value; setForm({...form, specialGuests: g}); }} placeholder="Guest Name (e.g. Santosh Kumar Pabba ji)" />
+                    <input value={guest.description} onChange={e => { const g = [...form.specialGuests]; g[idx].description = e.target.value; setForm({...form, specialGuests: g}); }} placeholder="Designation (Optional)" />
+                    
+                    <div style={{ gridColumn: 'span 2', display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingImage}
+                        onChange={e => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleImageUpload(e.target.files[0], url => {
+                              const g = [...form.specialGuests];
+                              g[idx].logo = url;
+                              setForm({ ...form, specialGuests: g });
+                            });
+                          }
+                        }}
+                      />
+                      {guest.logo && (
+                        <img src={guest.logo} alt="Preview" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 20 }} />
+                      )}
+                      <input style={{ flex: 1 }} value={guest.logo} onChange={e => { const g = [...form.specialGuests]; g[idx].logo = e.target.value; setForm({...form, specialGuests: g}); }} placeholder="Or enter image URL" />
+                    </div>
+
+                    <button type="button" onClick={() => { const g = [...form.specialGuests]; g.splice(idx, 1); setForm({...form, specialGuests: g}); }} style={{ color: 'red', background: 'transparent', border: 'none', cursor: 'pointer', gridColumn: 'span 2', textAlign: 'right', fontSize: 12 }}>Remove Special Guest</button>
                   </div>
                 ))}
               </div>

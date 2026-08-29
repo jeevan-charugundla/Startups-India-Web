@@ -85,6 +85,7 @@ function CheckoutContent() {
     try {
       const orderRes = await apiPost('/api/v1/payments/razorpay/order', {
         courseId: course._id,
+        // priceInr is already in paise - pass it directly
         amount: course.priceInr || course.price,
       });
 
@@ -182,7 +183,9 @@ function CheckoutContent() {
     );
   }
 
-  const price = course.priceInr || course.price || 0;
+  // priceInr is stored in paise - divide by 100 for display
+  const price = Math.round((course.priceInr || course.price || 0) / 100);
+  const displayPrice = course.priceInr || course.price || 0; // keep paise for Razorpay amount field
 
   // Generate dynamic syllabus based on category
   const getSyllabus = (category) => {
@@ -337,7 +340,7 @@ function CheckoutContent() {
                 <div className="summary-rows">
                   <div className="row">
                     <span>Program Fee</span>
-                    <span>{price > 0 ? `₹${price.toLocaleString()}` : 'FREE'}</span>
+                    <span>{price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'FREE'}</span>
                   </div>
                   <div className="row">
                     <span>Platform Access</span>
@@ -351,7 +354,7 @@ function CheckoutContent() {
 
                 <div className="total-row">
                   <span>Total Amount</span>
-                  <span className="amount">{price > 0 ? `₹${price.toLocaleString()}` : 'FREE'}</span>
+                  <span className="amount">{price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'FREE'}</span>
                 </div>
 
                 <div className="sidebar-faq">
@@ -382,7 +385,7 @@ function CheckoutContent() {
                   disabled={processing}
                   className={`btn-pay ${processing ? 'loading' : ''}`}
                 >
-                  {processing ? 'Processing...' : price > 0 ? `Secure Payment • ₹${price.toLocaleString()}` : 'Enroll for Free Now'}
+                  {processing ? 'Processing...' : price > 0 ? `Secure Payment • ₹${price.toLocaleString('en-IN')}` : 'Enroll for Free Now'}
                 </button>
 
                 <div className="secure-logos">
